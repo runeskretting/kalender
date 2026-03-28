@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* FullCalendar overrides */
+.fc {
+  height: 100%;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+
+.fc-daygrid-day:hover {
+  background-color: #f5f3ff;
+  cursor: pointer;
+}
+
+.fc-event {
+  cursor: pointer;
+  border-radius: 4px !important;
+  font-size: 0.75rem !important;
+  padding: 1px 4px !important;
+}
+
+.fc-list-event:hover td {
+  background-color: #f5f3ff !important;
+  cursor: pointer;
+}
+
+.fc-scroller {
+  scrollbar-width: thin;
+}
+
+.fc-day-today {
+  background-color: #eef2ff !important;
+}
+
+/* dialog backdrop */
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}

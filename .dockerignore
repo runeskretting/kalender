@@ -1,0 +1,19 @@
+# Secrets – must never end up in Docker image layers
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Dev dependencies and build artifacts not needed in image
+node_modules
+.next
+
+# Docs and scripts not needed in image
+README.md
+scripts/
+
+# Editor and OS files
+.DS_Store
+*.pem
