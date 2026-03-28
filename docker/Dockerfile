@@ -24,7 +24,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/public            ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone  ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static      ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/lib/db/migrations ./migrations
-COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/docker/migrate.js ./migrate.js
 COPY --from=deps    --chown=nextjs:nodejs /app/node_modules      ./node_modules
 COPY --chown=nextjs:nodejs docker/entrypoint.sh ./entrypoint.sh
 
