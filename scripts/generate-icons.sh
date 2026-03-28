@@ -7,7 +7,7 @@
 set -e
 
 SOURCE="${1:-}"
-OUTDIR="$(dirname "$0")/../public/icons"
+OUTDIR="$(cd "$(dirname "$0")/.." && pwd)/public/icons"
 mkdir -p "$OUTDIR"
 
 if [ -z "$SOURCE" ]; then
