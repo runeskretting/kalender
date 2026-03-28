@@ -6,7 +6,7 @@ CREATE TABLE "accounts" (
 	"provider_account_id" text NOT NULL,
 	"refresh_token" text,
 	"access_token" text,
-	"expires_at" text,
+	"expires_at" integer,
 	"token_type" text,
 	"scope" text,
 	"id_token" text,
