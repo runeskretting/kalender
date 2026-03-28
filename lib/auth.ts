@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db } from "@/lib/db"
-import { users } from "@/lib/db/schema"
+import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import type { Role } from "@/lib/types"
 
@@ -21,7 +21,12 @@ function getParentEmails(): string[] {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }),
   providers: [Google],
   session: { strategy: "jwt" },
 
