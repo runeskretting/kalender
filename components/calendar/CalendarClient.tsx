@@ -236,6 +236,12 @@ export default function CalendarClient({ userRole, userId }: CalendarClientProps
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}
           nowIndicator={true}
+          dayHeaderContent={(args) => (
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-xs text-gray-500">{args.date.toLocaleDateString("nb-NO", { weekday: "short" })}</span>
+              <span className="text-sm font-semibold">{args.date.getDate()}</span>
+            </div>
+          )}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           firstDay={1}

@@ -37,7 +37,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       ref={dialogRef}
       className="
         m-0 p-0 bg-transparent
-        w-full max-w-lg
+        w-full max-w-lg h-full sm:h-auto
         fixed
         sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
         bottom-0 left-0 sm:bottom-auto
@@ -48,7 +48,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
