@@ -9,8 +9,10 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  // pdf-parse uses dynamic require() for test files; exclude from bundling
-  serverExternalPackages: ["pdf-parse"],
+  experimental: {
+    // pdf-parse uses dynamic require() for test files; exclude from bundling
+    serverComponentsExternalPackages: ["pdf-parse"],
+  },
   images: {
     remotePatterns: [
       {

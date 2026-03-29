@@ -310,7 +310,6 @@ export default function CalendarClient({ userRole, userId }: CalendarClientProps
       )}
       {modal.mode === "importUkeplan" && (
         <UkeplanImportModal
-          userId={userId}
           onClose={() => setModal({ mode: "closed" })}
           onCreated={() => refreshCalendar()}
         />

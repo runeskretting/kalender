@@ -25,12 +25,11 @@ type ModalState =
   | { stage: "error"; message: string }
 
 interface Props {
-  userId: string
   onClose: () => void
   onCreated: (event: CalendarEvent) => void
 }
 
-export default function UkeplanImportModal({ userId: _userId, onClose, onCreated }: Props) {
+export default function UkeplanImportModal({ onClose, onCreated }: Props) {
   const [state, setState] = useState<ModalState>({ stage: "idle" })
   const inputRef = useRef<HTMLInputElement>(null)
 
