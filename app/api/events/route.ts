@@ -75,8 +75,10 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       creatorId: (session as any).user.id as string,
     })
-  } catch {
-    return NextResponse.json({ error: "Intern serverfeil" }, { status: 500 })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[POST /api/events] createEvent feilet:", msg)
+    return NextResponse.json({ error: `Databasefeil: ${msg}` }, { status: 500 })
   }
 
   if (!event) {
