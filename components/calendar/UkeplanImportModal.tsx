@@ -29,9 +29,33 @@ interface Props {
   onCreated: (event: CalendarEvent) => void
 }
 
+const COLORS = [
+  { value: "#22c55e", label: "Grønn" },
+  { value: "#3b82f6", label: "Blå" },
+  { value: "#a855f7", label: "Lilla" },
+  { value: "#f97316", label: "Oransje" },
+  { value: "#ec4899", label: "Rosa" },
+]
+
 export default function UkeplanImportModal({ onClose, onCreated }: Props) {
   const [state, setState] = useState<ModalState>({ stage: "idle" })
+  const [childName, setChildName] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("ukeplan_childName") ?? "" : ""
+  )
+  const [selectedColor, setSelectedColor] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("ukeplan_color") ?? "#22c55e" : "#22c55e"
+  )
   const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleNameChange(val: string) {
+    setChildName(val)
+    localStorage.setItem("ukeplan_childName", val)
+  }
+
+  function handleColorChange(val: string) {
+    setSelectedColor(val)
+    localStorage.setItem("ukeplan_color", val)
+  }
 
   async function handleFile(file: File) {
     setState({ stage: "loading" })
@@ -77,17 +101,18 @@ export default function UkeplanImportModal({ onClose, onCreated }: Props) {
     for (const item of state.items) {
       const startTime = new Date(item.startDate + "T00:00:00").toISOString()
       const endTime = new Date(item.endDate + "T23:59:59").toISOString()
+      const name = childName.trim()
 
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: `Lekser: ${item.subject}`,
+          title: name ? `Lekser (${name}): ${item.subject}` : `Lekser: ${item.subject}`,
           description: item.description,
           startTime,
           endTime,
           allDay: true,
-          color: "#22c55e",
+          color: selectedColor,
         }),
       })
 
@@ -100,34 +125,66 @@ export default function UkeplanImportModal({ onClose, onCreated }: Props) {
     onClose()
   }
 
-  const title = "Last opp ukeplan"
-
   return (
-    <Modal open title={title} onClose={onClose}>
+    <Modal open title="Last opp ukeplan" onClose={onClose}>
       {state.stage === "idle" && (
-        <div
-          className="flex flex-col items-center gap-4 py-8 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
-        >
-          <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-700">Klikk for å velge PDF</p>
-            <p className="text-xs text-gray-500 mt-1">eller dra og slipp filen her</p>
+        <div className="flex flex-col gap-4">
+          {/* Child name + color */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Hvem gjelder leksene?</label>
+              <input
+                type="text"
+                placeholder="F.eks. Emma"
+                value={childName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Farge</label>
+              <div className="flex gap-2">
+                {COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    title={c.label}
+                    onClick={() => handleColorChange(c.value)}
+                    className="w-7 h-7 rounded-full transition-transform hover:scale-110 focus:outline-none"
+                    style={{
+                      backgroundColor: c.value,
+                      boxShadow: selectedColor === c.value ? `0 0 0 2px white, 0 0 0 4px ${c.value}` : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleFile(file)
-            }}
-          />
+
+          {/* Drop zone */}
+          <div
+            className="flex flex-col items-center gap-4 py-8 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-700">Klikk for å velge PDF</p>
+              <p className="text-xs text-gray-500 mt-1">eller dra og slipp filen her</p>
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleFile(file)
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -170,7 +227,10 @@ export default function UkeplanImportModal({ onClose, onCreated }: Props) {
             {state.items.map((item, i) => (
               <div key={i} className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: selectedColor }}
+                  />
                   <input
                     className="flex-1 text-sm font-medium text-gray-900 border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
                     value={item.subject}
