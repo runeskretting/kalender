@@ -53,7 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role?: Role }).role
         token.id = user.id
       }
-      if (!token.role && token.email) {
+      if ((!token.role || !token.id) && token.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, token.email as string),
         })
