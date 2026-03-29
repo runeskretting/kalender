@@ -46,8 +46,9 @@ export default function EventModal({
       }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error ?? "Kunne ikke opprette hendelse")
+      let errMsg = "Kunne ikke opprette hendelse"
+      try { const err = await res.json(); errMsg = err.error ?? errMsg } catch {}
+      throw new Error(errMsg)
     }
     const created: CalendarEvent = await res.json()
     onCreated(created)
@@ -65,8 +66,9 @@ export default function EventModal({
       }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error ?? "Kunne ikke oppdatere hendelse")
+      let errMsg = "Kunne ikke oppdatere hendelse"
+      try { const err = await res.json(); errMsg = err.error ?? errMsg } catch {}
+      throw new Error(errMsg)
     }
     const updated: CalendarEvent = await res.json()
     onUpdated(updated)

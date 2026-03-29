@@ -66,13 +66,22 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const event = await createEvent({
-    ...rest,
-    startTime: start,
-    endTime: end,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    creatorId: (session as any).user.id as string,
-  })
+  let event
+  try {
+    event = await createEvent({
+      ...rest,
+      startTime: start,
+      endTime: end,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      creatorId: (session as any).user.id as string,
+    })
+  } catch {
+    return NextResponse.json({ error: "Intern serverfeil" }, { status: 500 })
+  }
+
+  if (!event) {
+    return NextResponse.json({ error: "Hendelse ble ikke opprettet" }, { status: 500 })
+  }
 
   return NextResponse.json(event, { status: 201 })
 }
