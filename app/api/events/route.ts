@@ -77,8 +77,10 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error("[POST /api/events] createEvent feilet:", msg)
-    return NextResponse.json({ error: `Databasefeil: ${msg}` }, { status: 500 })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cause = (e as any)?.cause?.message ?? (e as any)?.cause ?? ""
+    console.error("[POST /api/events] createEvent feilet:", msg, cause)
+    return NextResponse.json({ error: `Databasefeil: ${cause || msg}` }, { status: 500 })
   }
 
   if (!event) {
