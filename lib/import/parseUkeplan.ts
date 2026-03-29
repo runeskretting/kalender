@@ -54,6 +54,18 @@ function findWeekNumber(text: string): { week: number; year: number } | null {
   return { week, year }
 }
 
+function isLekserHeader(trimmed: string): boolean {
+  // Strip all non-letter characters and compare — handles punctuation, nbsp, etc.
+  const lettersOnly = trimmed.toLowerCase().replace(/[^a-zæøå]/g, "")
+  return lettersOnly === "lekser"
+}
+
+function isSectionHeader(lower: string): boolean {
+  return SECTION_HEADERS.some(
+    (h) => lower === h || lower.startsWith(h + ":") || lower.startsWith(h + "!") || lower.startsWith(h + " ")
+  )
+}
+
 function findLekserSection(lines: string[]): string[] {
   let inLekser = false
   const sectionLines: string[] = []
@@ -64,15 +76,15 @@ function findLekserSection(lines: string[]): string[] {
 
     const lower = trimmed.toLowerCase()
 
-    // Check if this is the Lekser header
-    if (!inLekser && lower === "lekser") {
+    // Check if this is the Lekser header (flexible: handles extra chars, nbsp, etc.)
+    if (!inLekser && isLekserHeader(trimmed)) {
       inLekser = true
       continue
     }
 
     if (inLekser) {
       // Check if we've hit a new section header
-      if (SECTION_HEADERS.some((h) => lower === h || lower.startsWith(h + ":"))) {
+      if (isSectionHeader(lower)) {
         break
       }
       sectionLines.push(trimmed)
@@ -88,18 +100,27 @@ function parseSubjectBlocks(lines: string[]): Array<{ subject: string; text: str
   let currentLines: string[] = []
 
   for (const line of lines) {
-    const matchedSubject = KNOWN_SUBJECTS.find(
-      (s) => line.toLowerCase() === s.toLowerCase() || line.toLowerCase().startsWith(s.toLowerCase() + ":")
-    )
+    const lower = line.toLowerCase()
+
+    // Match subject exactly, or followed by ":", space, or tab
+    const matchedSubject = KNOWN_SUBJECTS.find((s) => {
+      const sl = s.toLowerCase()
+      return (
+        lower === sl ||
+        lower.startsWith(sl + ":") ||
+        lower.startsWith(sl + " ") ||
+        lower.startsWith(sl + "\t")
+      )
+    })
 
     if (matchedSubject) {
       if (currentSubject && currentLines.length > 0) {
         blocks.push({ subject: currentSubject, text: currentLines.join(" ").trim() })
       }
       currentSubject = matchedSubject
-      // If the subject line also has content after ":", grab it
-      const colonIdx = line.indexOf(":")
-      currentLines = colonIdx >= 0 && colonIdx < line.length - 1 ? [line.slice(colonIdx + 1).trim()] : []
+      // Grab any inline content after the subject name (after ":", space, or tab)
+      const rest = line.slice(matchedSubject.length).replace(/^[:"\s\t]+/, "").trim()
+      currentLines = rest ? [rest] : []
     } else if (currentSubject) {
       currentLines.push(line)
     }
