@@ -11,6 +11,7 @@ import type { EventClickArg, EventDropArg, EventInput } from "@fullcalendar/core
 import type { EventResizeDoneArg } from "@fullcalendar/interaction"
 import nbLocale from "@fullcalendar/core/locales/nb"
 import EventModal from "@/components/calendar/EventModal"
+import UkeplanImportModal from "@/components/calendar/UkeplanImportModal"
 import type { CalendarEvent, Role } from "@/lib/types"
 
 type ViewType = "dayGridMonth" | "timeGridWeek" | "listWeek"
@@ -19,6 +20,7 @@ type ModalState =
   | { mode: "create"; date: Date }
   | { mode: "view"; event: CalendarEvent }
   | { mode: "edit"; event: CalendarEvent }
+  | { mode: "importUkeplan" }
 
 interface CalendarClientProps {
   userRole: Role
@@ -206,6 +208,21 @@ export default function CalendarClient({ userRole, userId }: CalendarClientProps
               </button>
             ))}
           </div>
+          {/* Upload ukeplan button – parents only */}
+          {userRole === "parent" && (
+            <button
+              onClick={() => setModal({ mode: "importUkeplan" })}
+              className="ml-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              aria-label="Last opp ukeplan"
+              title="Last opp ukeplan"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                <polyline points="16 12 12 8 8 12" />
+                <line x1="12" y1="8" x2="12" y2="20" />
+              </svg>
+            </button>
+          )}
           {/* Add event button */}
           <button
             onClick={() => setModal({ mode: "create", date: new Date() })}
@@ -289,6 +306,13 @@ export default function CalendarClient({ userRole, userId }: CalendarClientProps
           onUpdated={() => { setModal({ mode: "closed" }); refreshCalendar() }}
           onDeleted={() => { setModal({ mode: "closed" }); refreshCalendar() }}
           onEditRequest={() => {}}
+        />
+      )}
+      {modal.mode === "importUkeplan" && (
+        <UkeplanImportModal
+          userId={userId}
+          onClose={() => setModal({ mode: "closed" })}
+          onCreated={() => refreshCalendar()}
         />
       )}
     </div>
