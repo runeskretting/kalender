@@ -32,6 +32,7 @@ services:
       AUTH_URL: https://${DOMAIN}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS}
       PARENT_EMAILS: ${PARENT_EMAILS}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       NODE_ENV: production
     depends_on:
       postgres:
