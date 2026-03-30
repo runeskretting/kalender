@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk"
 import { startOfISOWeek, addDays, setISOWeek, setYear } from "date-fns"
 
 export interface LekseItem {
@@ -13,150 +14,72 @@ export interface ParsedUkeplan {
   items: LekseItem[]
 }
 
-// Known subjects in Norwegian school plans
-const KNOWN_SUBJECTS = [
-  "Norsk",
-  "Matematikk",
-  "Matte",
-  "Engelsk",
-  "Naturfag",
-  "Samfunnsfag",
-  "KRLE",
-  "Kunst og håndverk",
-  "Musikk",
-  "Mat og helse",
-  "Kroppsøving",
-  "Gym",
-]
-
-// Section headers that signal we've left the Lekser section
-const SECTION_HEADERS = [
-  "læringsmål",
-  "ukens tips",
-  "ukestips",
-  "informasjon",
-  "beskjeder",
-  "kontaktinfo",
-]
-
 function getMondayOfWeek(week: number, year: number): Date {
-  const jan4 = new Date(year, 0, 4) // Jan 4 is always in week 1
-  const weekStart = startOfISOWeek(setISOWeek(setYear(jan4, year), week))
-  return weekStart
+  const jan4 = new Date(year, 0, 4)
+  return startOfISOWeek(setISOWeek(setYear(jan4, year), week))
 }
 
-function findWeekNumber(text: string): { week: number; year: number } | null {
-  const match = text.match(/uke\s+(\d+)/i)
-  if (!match) return null
-  const week = parseInt(match[1], 10)
-  if (week < 1 || week > 53) return null
-  const year = new Date().getFullYear()
-  return { week, year }
+const client = new Anthropic()
+
+export async function parseUkeplanText(text: string): Promise<ParsedUkeplan | null> {
+  const currentYear = new Date().getFullYear()
+
+  const message = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "user",
+        content: `Du er en assistent som trekker ut lekseinformasjon fra norske skolers ukeplaner.
+
+Trekk ut følgende fra teksten nedenfor:
+1. Ukenummer (se etter "Uke X" eller lignende)
+2. Alle lekser fra "Lekser"-seksjonen
+
+Returner KUN gyldig JSON — ingen forklaringer, ingen markdown-blokker:
+{
+  "week": <ukenummer som heltall, eller null hvis ikke funnet>,
+  "year": ${currentYear},
+  "items": [
+    { "subject": "<fagnavn eller kort tittel>", "description": "<full beskrivelse>" }
+  ]
 }
 
-function isLekserHeader(trimmed: string): boolean {
-  // Strip all non-letter characters and compare — handles punctuation, nbsp, etc.
-  const lettersOnly = trimmed.toLowerCase().replace(/[^a-zæøå]/g, "")
-  return lettersOnly === "lekser"
-}
+Regler:
+- Hvis "Lekser"-seksjonen mangler fagnavnlinjer, bruk "Lekser" som subject og hele teksten som description
+- Hvis det ikke er noen "Lekser"-seksjon, returner items som []
+- Hvis ukenummer mangler, returner week som null
 
-function isSectionHeader(lower: string): boolean {
-  return SECTION_HEADERS.some(
-    (h) => lower === h || lower.startsWith(h + ":") || lower.startsWith(h + "!") || lower.startsWith(h + " ")
-  )
-}
+PDF-tekst:
+${text}`,
+      },
+    ],
+  })
 
-function findLekserSection(lines: string[]): string[] {
-  let inLekser = false
-  const sectionLines: string[] = []
+  const raw = message.content[0].type === "text" ? message.content[0].text.trim() : ""
 
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) continue
-
-    const lower = trimmed.toLowerCase()
-
-    // Check if this is the Lekser header (flexible: handles extra chars, nbsp, etc.)
-    if (!inLekser && isLekserHeader(trimmed)) {
-      inLekser = true
-      continue
-    }
-
-    if (inLekser) {
-      // Check if we've hit a new section header
-      if (isSectionHeader(lower)) {
-        break
-      }
-      sectionLines.push(trimmed)
-    }
+  let parsed: { week: number | null; year: number; items: Array<{ subject: string; description: string }> }
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
   }
 
-  return sectionLines
-}
+  if (!parsed.week || parsed.items.length === 0) return null
 
-function parseSubjectBlocks(lines: string[]): Array<{ subject: string; text: string }> {
-  const blocks: Array<{ subject: string; text: string }> = []
-  let currentSubject: string | null = null
-  let currentLines: string[] = []
-
-  for (const line of lines) {
-    const lower = line.toLowerCase()
-
-    // Match subject exactly, or followed by ":", space, or tab
-    const matchedSubject = KNOWN_SUBJECTS.find((s) => {
-      const sl = s.toLowerCase()
-      return (
-        lower === sl ||
-        lower.startsWith(sl + ":") ||
-        lower.startsWith(sl + " ") ||
-        lower.startsWith(sl + "\t")
-      )
-    })
-
-    if (matchedSubject) {
-      if (currentSubject && currentLines.length > 0) {
-        blocks.push({ subject: currentSubject, text: currentLines.join(" ").trim() })
-      }
-      currentSubject = matchedSubject
-      // Grab any inline content after the subject name (after ":", space, or tab)
-      const rest = line.slice(matchedSubject.length).replace(/^[:"\s\t]+/, "").trim()
-      currentLines = rest ? [rest] : []
-    } else if (currentSubject) {
-      currentLines.push(line)
-    }
-  }
-
-  if (currentSubject && currentLines.length > 0) {
-    blocks.push({ subject: currentSubject, text: currentLines.join(" ").trim() })
-  }
-
-  return blocks
-}
-
-export function parseUkeplanText(text: string): ParsedUkeplan | null {
-  const weekInfo = findWeekNumber(text)
-  if (!weekInfo) return null
-
-  const lines = text.split(/\r?\n/)
-  const lekserLines = findLekserSection(lines)
-
-  if (lekserLines.length === 0) return null
-
-  const blocks = parseSubjectBlocks(lekserLines)
-  if (blocks.length === 0) return null
-
-  const monday = getMondayOfWeek(weekInfo.week, weekInfo.year)
+  const monday = getMondayOfWeek(parsed.week, parsed.year ?? currentYear)
   const friday = addDays(monday, 4)
-
   const startDate = monday.toISOString().split("T")[0]
   const endDate = friday.toISOString().split("T")[0]
 
-  const items: LekseItem[] = blocks.map((b) => ({
-    subject: b.subject,
-    description: b.text,
-    startDate,
-    endDate,
-  }))
-
-  return { week: weekInfo.week, year: weekInfo.year, items }
+  return {
+    week: parsed.week,
+    year: parsed.year ?? currentYear,
+    items: parsed.items.map((item) => ({
+      subject: item.subject,
+      description: item.description,
+      startDate,
+      endDate,
+    })),
+  }
 }

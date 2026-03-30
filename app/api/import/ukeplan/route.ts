@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kunne ikke lese PDF-filen" }, { status: 422 })
   }
 
-  const result = parseUkeplanText(text)
+  const result = await parseUkeplanText(text)
 
   if (!result) {
     return NextResponse.json(
